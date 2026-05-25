@@ -166,7 +166,7 @@ export default function Categories() {
                 <p className="text-slate-400 text-xs line-clamp-2">{cat.description || 'No description provided'}</p>
               </div>
 
-              <div className="flex justify-end gap-2 mt-6 pt-4 border-t border-white/5 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="flex justify-end gap-2 mt-6 pt-4 border-t border-white/5 opacity-100">
                 <button onClick={() => openEditModal(cat)} className="p-2 hover:bg-white/10 rounded-lg text-slate-400 hover:text-indigo-400 transition-all">
                   <Edit2 className="w-4 h-4" />
                 </button>

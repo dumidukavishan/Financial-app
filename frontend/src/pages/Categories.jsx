@@ -152,11 +152,11 @@ export default function Categories() {
             <div key={cat.id} className="glass-card p-6 flex flex-col justify-between relative overflow-hidden group">
               {/* Colored side indicator */}
               <div className="absolute top-0 left-0 w-[4px] h-full" style={{ backgroundColor: cat.color || '#6366f1' }} />
-              
+
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl" style={{ backgroundColor: `${cat.color || '#6366f1'}20` }}>
-                    {cat.icon || '📁'}
+                    {'📁'}
                   </div>
                   <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
                     {cat.type}

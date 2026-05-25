@@ -24,7 +24,11 @@ export default function MonthlySummary() {
     setLoading(true);
     try {
       const response = await dashboardAPI.get();
-      setData(response.data);
+      const resData = response.data;
+      if (resData?.monthlyTrends) {
+        resData.monthlyTrends = resData.monthlyTrends.filter(m => m.INCOME > 0 || m.EXPENSE > 0 || m.SAVINGS > 0);
+      }
+      setData(resData);
     } catch (err) {
       toast.error('Failed to load monthly summary data.');
     } finally {

@@ -29,10 +29,14 @@ export default function Dashboard() {
     setLoading(true);
     try {
       const response = await dashboardAPI.get();
-      setData(response.data);
+      const resData = response.data;
+      if (resData?.monthlyTrends) {
+        resData.monthlyTrends = resData.monthlyTrends.filter(m => m.INCOME > 0 || m.EXPENSE > 0 || m.SAVINGS > 0);
+      }
+      setData(resData);
     } catch (err) {
       toast.error('Failed to load dashboard data. Starting with default workspace.');
-      setData({
+      const mockData = {
         totalIncome: 750000,
         totalExpenses: 320000,
         totalSavings: 150000,
@@ -75,7 +79,11 @@ export default function Dashboard() {
         currencyBreakdown: [
           { currency: 'LKR', amount: 430000, lkrAmount: 430000, country: 'Sri Lanka', flag: '🇱🇰' }
         ]
-      });
+      };
+      if (mockData.monthlyTrends) {
+        mockData.monthlyTrends = mockData.monthlyTrends.filter(m => m.INCOME > 0 || m.EXPENSE > 0 || m.SAVINGS > 0);
+      }
+      setData(mockData);
     } finally {
       setLoading(false);
     }
@@ -105,22 +113,48 @@ export default function Dashboard() {
     );
   }
 
+  const getCurrentAndPrevMonthKeys = () => {
+    const now = new Date();
+    const currentMonthKey = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, '0');
+
+    const prevDate = new Date();
+    prevDate.setMonth(prevDate.getMonth() - 1);
+    const prevMonthKey = prevDate.getFullYear() + "-" + String(prevDate.getMonth() + 1).padStart(2, '0');
+
+    return { currentMonthKey, prevMonthKey };
+  };
+
   const getNetBalanceGrowth = () => {
-    if (!data?.monthlyTrends || data.monthlyTrends.length < 2) return { value: 0, isPositive: true };
-    const current = data.monthlyTrends[data.monthlyTrends.length - 1];
-    const prev = data.monthlyTrends[data.monthlyTrends.length - 2];
+    if (!data?.monthlyTrends) return { value: 0, isPositive: true };
+    const { currentMonthKey, prevMonthKey } = getCurrentAndPrevMonthKeys();
+
+    // Support both actual backend format (YYYY-MM) and mock format ('May') if needed, though backend is primary
+    const current = data.monthlyTrends.find(m => m.month === currentMonthKey) || { INCOME: 0, EXPENSE: 0 };
+    const prev = data.monthlyTrends.find(m => m.month === prevMonthKey) || { INCOME: 0, EXPENSE: 0 };
+
     const currentNet = current.INCOME - current.EXPENSE;
     const prevNet = prev.INCOME - prev.EXPENSE;
-    if (prevNet === 0) return { value: 0, isPositive: true };
+
+    if (prevNet === 0) {
+      if (currentNet > 0) return { value: '100.0', isPositive: true };
+      if (currentNet < 0) return { value: '100.0', isPositive: false };
+      return { value: 0, isPositive: true };
+    }
     const growth = ((currentNet - prevNet) / Math.abs(prevNet)) * 100;
     return { value: Math.abs(growth).toFixed(1), isPositive: growth >= 0 };
   };
 
   const getIncomeGrowth = () => {
-    if (!data?.monthlyTrends || data.monthlyTrends.length < 2) return { value: 0, isPositive: true };
-    const current = data.monthlyTrends[data.monthlyTrends.length - 1];
-    const prev = data.monthlyTrends[data.monthlyTrends.length - 2];
-    if (prev.INCOME === 0) return { value: 0, isPositive: true };
+    if (!data?.monthlyTrends) return { value: 0, isPositive: true };
+    const { currentMonthKey, prevMonthKey } = getCurrentAndPrevMonthKeys();
+
+    const current = data.monthlyTrends.find(m => m.month === currentMonthKey) || { INCOME: 0 };
+    const prev = data.monthlyTrends.find(m => m.month === prevMonthKey) || { INCOME: 0 };
+
+    if (prev.INCOME === 0) {
+      if (current.INCOME > 0) return { value: '100.0', isPositive: true };
+      return { value: 0, isPositive: true };
+    }
     const growth = ((current.INCOME - prev.INCOME) / prev.INCOME) * 100;
     return { value: Math.abs(growth).toFixed(1), isPositive: growth >= 0 };
   };
@@ -134,13 +168,16 @@ export default function Dashboard() {
   const incGrowth = getIncomeGrowth();
   const expRatio = getExpenseRatio();
 
+  const freeToSpend = (data?.totalIncome || 0) - ((data?.totalSavings || 0) + (data?.totalExpenses || 0));
+  const totalSavingsAndExpenses = (data?.totalSavings || 0) + (data?.totalExpenses || 0);
+
   return (
     <div className="space-y-8">
       {/* Welcome header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-extrabold text-white tracking-tight">Financial Workspace</h1>
-          <p className="text-slate-400 text-sm mt-1">Real-time overview of your financial operating system — Sri Lanka Rupees (LKR).</p>
+          <p className="text-slate-400 text-sm mt-1">Real-time overview of your financial operating system.</p>
         </div>
         <button
           onClick={fetchDashboard}
@@ -150,6 +187,35 @@ export default function Dashboard() {
           <RefreshCw className="w-5 h-5 text-slate-400" />
         </button>
       </div>
+
+      {/* Prominent Free to Spend Banner */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="glass-card p-8 bg-gradient-to-br from-indigo-500/20 via-purple-500/20 to-pink-500/20 border-indigo-500/30 relative overflow-hidden"
+      >
+        <div className="absolute -right-20 -top-20 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl" />
+        <div className="absolute -left-20 -bottom-20 w-64 h-64 bg-pink-500/20 rounded-full blur-3xl" />
+
+        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <div className="p-2 bg-indigo-500/20 rounded-lg">
+                <Wallet className="w-5 h-5 text-indigo-400" />
+              </div>
+              <h2 className="text-slate-300 text-sm font-bold uppercase tracking-widest">Free to Spend</h2>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-4xl md:text-5xl font-black text-white tracking-tight drop-shadow-sm">
+                {formatLKR(freeToSpend)}
+              </span>
+            </div>
+            <p className="text-slate-400 text-sm mt-2 font-medium">
+              Available liquidity after total savings and all expenses
+            </p>
+          </div>
+        </div>
+      </motion.div>
 
       {/* Main KPI Summary Widgets */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -209,25 +275,6 @@ export default function Dashboard() {
             <span>{expRatio}% of monthly income spent</span>
           </div>
         </div>
-
-        <div className="glass-card p-6 relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-[3px] bg-cyan-500" />
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider">Investments &amp; Assets</p>
-              <h3 className="text-2xl font-extrabold text-white mt-2 tracking-tight">
-                {formatLKR(data?.totalInvestments)}
-              </h3>
-            </div>
-            <div className="p-3 bg-cyan-500/10 rounded-xl text-cyan-400">
-              <Briefcase className="w-6 h-6" />
-            </div>
-          </div>
-          <div className="mt-4 flex items-center gap-1 text-cyan-400 text-xs font-semibold">
-            <PiggyBank className="w-4 h-4" />
-            <span>Active growth portfolio</span>
-          </div>
-        </div>
       </div>
 
       {/* Charts Section */}
@@ -237,7 +284,7 @@ export default function Dashboard() {
           <div className="flex items-center justify-between mb-6">
             <div>
               <h4 className="text-lg font-bold text-white">Cash Flow Trends</h4>
-              <p className="text-slate-400 text-xs mt-1">Income, Expense &amp; Savings comparison over time (LKR — Rs.)</p>
+              <p className="text-slate-400 text-xs mt-1">Income, Expense &amp; Savings comparison over time</p>
             </div>
           </div>
           <div className="h-80 w-full">
@@ -245,17 +292,17 @@ export default function Dashboard() {
               <AreaChart data={data?.monthlyTrends}>
                 <defs>
                   <linearGradient id="colorInc" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.2}/>
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.2} />
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                   </linearGradient>
                   <linearGradient id="colorExp" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.2}/>
-                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.2} />
+                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <XAxis dataKey="month" stroke="#475569" fontSize={11} tickLine={false} />
                 <YAxis stroke="#475569" fontSize={11} tickLine={false} axisLine={false}
-                  tickFormatter={(v) => 'Rs.' + (v >= 1000 ? (v/1000).toFixed(0) + 'K' : v)} />
+                  tickFormatter={(v) => 'Rs.' + (v >= 1000 ? (v / 1000).toFixed(0) + 'K' : v)} />
                 <Tooltip
                   contentStyle={{ background: '#1a1a2e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }}
                   labelStyle={{ color: '#fff' }}
@@ -269,10 +316,10 @@ export default function Dashboard() {
         </div>
 
         {/* Expense Category Breakdown */}
-        <div className="glass-card p-6 flex flex-col">
+        <div className="glass-card p-6 flex flex-col min-h-[400px]">
           <h4 className="text-lg font-bold text-white mb-2">Expense Allocation</h4>
           <p className="text-slate-400 text-xs mb-6">Distribution across dynamic categories</p>
-          <div className="h-64 flex-1 relative flex items-center justify-center">
+          <div className="w-full flex-1 min-h-[200px] relative flex items-center justify-center">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -295,16 +342,16 @@ export default function Dashboard() {
                 />
               </PieChart>
             </ResponsiveContainer>
-            <div className="absolute flex flex-col items-center text-center px-4">
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4 pointer-events-none">
               <span className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Total Outflow</span>
               <span className="text-base font-extrabold text-white mt-1">{formatLKR(data?.monthlyExpenses)}</span>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-2 mt-4 text-xs">
+          <div className="grid grid-cols-2 gap-x-2 gap-y-3 mt-6 text-xs w-full">
             {data?.expensesByCategory?.slice(0, 4).map((entry, idx) => (
-              <div key={idx} className="flex items-center gap-2 text-slate-300">
-                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }} />
-                <span className="truncate max-w-[100px]">{entry.category}</span>
+              <div key={idx} className="flex items-center gap-2 text-slate-300 overflow-hidden">
+                <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: COLORS[idx % COLORS.length] }} />
+                <span className="truncate">{entry.category}</span>
               </div>
             ))}
           </div>
@@ -335,15 +382,15 @@ export default function Dashboard() {
               <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider mb-2">Total Savings</p>
               <p className="text-xl font-extrabold text-cyan-400">{formatLKR(data?.totalSavings)}</p>
             </div>
+            <div className="bg-white/5 border border-white/5 rounded-2xl p-4">
+              <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider mb-2">Total Loans</p>
+              <p className="text-xl font-extrabold text-amber-400">{formatLKR(data?.totalLoans)}</p>
+            </div>
           </div>
           <div className="mt-4 bg-gradient-to-r from-indigo-500/10 to-cyan-500/10 border border-indigo-500/20 rounded-2xl p-4 flex items-center justify-between">
             <div>
               <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Net Balance (LKR)</p>
               <p className="text-2xl font-extrabold text-white mt-1">{formatLKR(data?.netBalance)}</p>
-            </div>
-            <div className="text-right">
-              <p className="text-xs text-slate-500">Total Loans</p>
-              <p className="text-sm font-bold text-amber-400">{formatLKR(data?.totalLoans)}</p>
             </div>
           </div>
         </div>
@@ -405,18 +452,18 @@ export default function Dashboard() {
           <div className="space-y-4">
             {data?.recentTransactions?.map((rec) => (
               <div key={rec.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-white/5 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-xs" style={{ backgroundColor: `${rec.categoryColor || '#6366f1'}20`, color: rec.categoryColor || '#6366f1' }}>
-                    {rec.categoryName?.charAt(0).toUpperCase()}
+                <div className="flex items-center gap-3 flex-1 min-w-0 mr-4">
+                  <div className="w-10 h-10 shrink-0 rounded-xl flex items-center justify-center font-bold text-xs" style={{ backgroundColor: `${rec.categoryColor || '#6366f1'}20`, color: rec.categoryColor || '#6366f1' }}>
+                    {(rec.categoryName || rec.type)?.charAt(0).toUpperCase()}
                   </div>
-                  <div>
-                    <p className="text-sm font-semibold text-white">{rec.title}</p>
-                    <p className="text-xs text-slate-400">{rec.categoryName} • {rec.recordDate}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-white truncate">{rec.title}</p>
+                    <p className="text-xs text-slate-400 truncate">{rec.categoryName || (rec.type ? rec.type.charAt(0) + rec.type.slice(1).toLowerCase() : '')} • {rec.recordDate}</p>
                   </div>
                 </div>
-                <div className={`flex items-center font-bold text-sm ${rec.type === 'INCOME' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                <div className={`flex items-center justify-end font-bold text-sm whitespace-nowrap shrink-0 ${rec.type === 'INCOME' ? 'text-emerald-400' : 'text-rose-400'}`}>
                   {rec.type === 'INCOME' ? '+' : '-'} {formatLKR(rec.amount)}
-                  {rec.type === 'INCOME' ? <ArrowUpRight className="w-4 h-4 ml-1" /> : <ArrowDownRight className="w-4 h-4 ml-1" />}
+                  {rec.type === 'INCOME' ? <ArrowUpRight className="w-4 h-4 ml-1 shrink-0" /> : <ArrowDownRight className="w-4 h-4 ml-1 shrink-0" />}
                 </div>
               </div>
             ))}

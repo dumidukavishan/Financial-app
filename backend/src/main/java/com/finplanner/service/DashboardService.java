@@ -106,33 +106,25 @@ public class DashboardService {
         // Active goals
         List<FinancialGoalDTO> activeGoals = goalService.getActiveGoals(userId);
 
-        // Monthly trends (last 6 months) converted to User's preferred currency
-        LocalDate sixMonthsAgo = now.minusMonths(5).withDayOfMonth(1); // 6 months inclusive of current
+        // Monthly trends for all months with records, converted to User's preferred currency
         List<Map<String, Object>> monthlyTrends = new ArrayList<>();
-        Map<String, Map<String, BigDecimal>> trendMap = new LinkedHashMap<>();
-
-        // Initialize months
-        for (int i = 5; i >= 0; i--) {
-            LocalDate d = now.minusMonths(i);
-            String monthKey = d.getYear() + "-" + String.format("%02d", d.getMonthValue());
-            Map<String, BigDecimal> typeMap = new HashMap<>();
-            typeMap.put("INCOME", BigDecimal.ZERO);
-            typeMap.put("EXPENSE", BigDecimal.ZERO);
-            typeMap.put("SAVINGS", BigDecimal.ZERO);
-            trendMap.put(monthKey, typeMap);
-        }
+        Map<String, Map<String, BigDecimal>> trendMap = new TreeMap<>(); // Naturally sorts by YYYY-MM
 
         for (FinancialRecord record : allRecords) {
             LocalDate rDate = record.getRecordDate();
-            if (rDate != null && !rDate.isBefore(sixMonthsAgo) && !rDate.isAfter(monthEnd)) {
+            if (rDate != null) {
                 String monthKey = rDate.getYear() + "-" + String.format("%02d", rDate.getMonthValue());
-                if (trendMap.containsKey(monthKey)) {
-                    BigDecimal converted = currencyService.convert(record.getAmount(), record.getCurrency(), userCurrency);
-                    String typeStr = record.getType().name();
-                    Map<String, BigDecimal> monthData = trendMap.get(monthKey);
-                    if (monthData.containsKey(typeStr)) {
-                        monthData.put(typeStr, monthData.get(typeStr).add(converted));
-                    }
+                
+                trendMap.putIfAbsent(monthKey, new HashMap<>());
+                Map<String, BigDecimal> monthData = trendMap.get(monthKey);
+                monthData.putIfAbsent("INCOME", BigDecimal.ZERO);
+                monthData.putIfAbsent("EXPENSE", BigDecimal.ZERO);
+                monthData.putIfAbsent("SAVINGS", BigDecimal.ZERO);
+
+                BigDecimal converted = currencyService.convert(record.getAmount(), record.getCurrency(), userCurrency);
+                String typeStr = record.getType().name();
+                if (monthData.containsKey(typeStr)) {
+                    monthData.put(typeStr, monthData.get(typeStr).add(converted));
                 }
             }
         }

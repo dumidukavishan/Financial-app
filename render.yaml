@@ -1,0 +1,32 @@
+services:
+  # Backend Service (Spring Boot via Docker)
+  - type: web
+    name: fp-backend
+    env: docker
+    rootDir: backend
+    plan: free
+    region: oregon
+    envVars:
+      - key: PORT
+        value: "8080"
+    
+  # Frontend Service (Vite + React)
+  - type: web
+    name: fp-frontend
+    env: static
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    publishPath: dist
+    plan: free
+    region: oregon
+    envVars:
+      - key: VITE_API_BASE_URL
+        fromService:
+          type: web
+          name: fp-backend
+          envVarKey: RENDER_EXTERNAL_URL
+    # Essential for Single Page Applications (SPA) to support client-side routing
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

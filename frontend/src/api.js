@@ -11,6 +11,10 @@ const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
+  // Ensure the URL always includes /api (fixes trailing slash or baseURL issues)
+  if (config.url && !config.url.startsWith('/api') && !config.baseURL?.endsWith('/api')) {
+    config.url = `/api${config.url.startsWith('/') ? '' : '/'}${config.url}`;
+  }
   const token = localStorage.getItem('token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;

@@ -1,0 +1,230 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  
+  /* Enterprise Dark Mode Palette */
+  --color-brand-50: #eff6ff;
+  --color-brand-100: #dbeafe;
+  --color-brand-500: #3b82f6; /* Main Primary */
+  --color-brand-600: #2563eb;
+  
+  --color-surface-50: #f8fafc;
+  --color-surface-900: #0f1115; /* Background */
+  --color-surface-800: #16181d; /* Cards/Sidebar */
+  --color-surface-700: #20232a; /* Hover states, inputs */
+  --color-surface-600: #2d313b;
+  
+  --color-border-subtle: #2d313b;
+  --color-border-strong: #3f4452;
+  
+  --color-text-primary: #f8fafc;
+  --color-text-secondary: #94a3b8;
+  --color-text-muted: #64748b;
+  
+  /* Semantic Colors */
+  --color-success-400: #34d399;
+  --color-success-500: #10b981;
+  --color-success-bg: rgba(16, 185, 129, 0.1);
+  
+  --color-danger-400: #f87171;
+  --color-danger-500: #ef4444;
+  --color-danger-bg: rgba(239, 68, 68, 0.1);
+  
+  --color-warning-400: #fbbf24;
+  --color-warning-500: #f59e0b;
+  
+  --color-info-400: #38bdf8;
+  --color-info-500: #0ea5e9;
+
+  /* Tailwind Color Overrides to map to Enterprise Theme */
+  --color-slate-800: var(--color-surface-700);
+  --color-slate-500: var(--color-text-muted);
+  --color-slate-400: var(--color-text-secondary);
+  --color-slate-300: var(--color-text-secondary);
+  --color-slate-200: var(--color-text-primary);
+  --color-white: var(--color-text-primary);
+  
+  --color-emerald-400: var(--color-success-400);
+  --color-emerald-500: var(--color-success-500);
+  --color-rose-400: var(--color-danger-400);
+  --color-rose-500: var(--color-danger-500);
+  --color-indigo-400: var(--color-brand-500);
+  --color-indigo-500: var(--color-brand-600);
+  --color-cyan-400: var(--color-info-400);
+  --color-cyan-500: var(--color-info-500);
+  --color-amber-400: var(--color-warning-400);
+  --color-amber-500: var(--color-warning-500);
+}
+
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  
+  body {
+    font-family: var(--font-sans);
+    background: var(--color-surface-900);
+    color: var(--color-text-primary);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    letter-spacing: -0.01em;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--color-surface-900);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-surface-600);
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-border-strong);
+  }
+}
+
+@layer components {
+  /* Modern Enterprise Card */
+  .glass-card {
+    background: var(--color-surface-800);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease-in-out;
+  }
+  
+  /* Primary Button */
+  .btn-primary {
+    background: var(--color-brand-500);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: 500;
+    font-size: 14px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .btn-primary:hover {
+    background: var(--color-brand-600);
+  }
+  .btn-primary:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--color-surface-900), 0 0 0 4px var(--color-brand-500);
+  }
+
+  /* Ghost/Secondary Button */
+  .btn-ghost {
+    background: transparent;
+    color: var(--color-text-secondary);
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: 500;
+    font-size: 14px;
+    border: 1px solid var(--color-border-subtle);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .btn-ghost:hover {
+    background: var(--color-surface-700);
+    color: var(--color-text-primary);
+    border-color: var(--color-border-strong);
+  }
+  .btn-ghost:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--color-surface-900), 0 0 0 4px var(--color-text-muted);
+  }
+
+  /* Input Fields */
+  .input-field {
+    background: var(--color-surface-700);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: var(--color-text-primary);
+    font-size: 14px;
+    width: 100%;
+    transition: all 0.15s ease;
+    outline: none;
+    font-family: var(--font-sans);
+  }
+  .input-field:hover {
+    border-color: var(--color-border-strong);
+  }
+  .input-field:focus {
+    background: var(--color-surface-800);
+    border-color: var(--color-brand-500);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  }
+  .input-field::placeholder {
+    color: var(--color-text-muted);
+  }
+  .input-field:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  /* Status Badges */
+  .badge-success {
+    background: var(--color-success-bg);
+    color: var(--color-success-400);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .badge-danger {
+    background: var(--color-danger-bg);
+    color: var(--color-danger-400);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .badge-default {
+    background: var(--color-surface-700);
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-border-subtle);
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  /* Skeleton Loading */
+  .skeleton {
+    background: linear-gradient(90deg, var(--color-surface-700) 25%, var(--color-surface-600) 50%, var(--color-surface-700) 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite linear;
+    border-radius: 6px;
+  }
+
+  @keyframes skeleton-loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+}

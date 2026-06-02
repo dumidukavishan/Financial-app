@@ -1,25 +1,24 @@
 import axios from 'axios';
 
-let API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
-if (API_BASE && !API_BASE.endsWith('/api')) {
-  API_BASE += '/api';
-}
+// In development: VITE_API_BASE_URL is undefined, so baseURL = '/api' (Vite proxy handles it)
+// In production:  VITE_API_BASE_URL = 'https://fp-backend-xhoa.onrender.com', so baseURL = 'https://fp-backend-xhoa.onrender.com/api'
+const BASE = import.meta.env.VITE_API_BASE_URL
+  ? `${import.meta.env.VITE_API_BASE_URL.replace(/\/+$/, '')}/api`
+  : '/api';
 
 const api = axios.create({
-  baseURL: API_BASE,
+  baseURL: BASE,
   headers: { 'Content-Type': 'application/json' },
 });
 
+// Attach JWT token on every request
 api.interceptors.request.use((config) => {
-  // Ensure the URL always includes /api (fixes trailing slash or baseURL issues)
-  if (config.url && !config.url.startsWith('/api') && !config.baseURL?.endsWith('/api')) {
-    config.url = `/api${config.url.startsWith('/') ? '' : '/'}${config.url}`;
-  }
   const token = localStorage.getItem('token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
+// Redirect to login on 401 (token expired / missing)
 api.interceptors.response.use(
   (response) => response,
   (error) => {

@@ -1,6 +1,9 @@
+import { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './AuthContext';
+import { useInactivityLogout } from './hooks/useInactivityLogout';
+import InactivityWarningModal from './components/InactivityWarningModal';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
@@ -19,19 +22,41 @@ function ProtectedRoute({ children }) {
 }
 
 function AppRoutes() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const [showWarning, setShowWarning] = useState(false);
+
+  const { stayLoggedIn } = useInactivityLogout({
+    active: !!user,                      // only track when logged in
+    onWarn:   () => setShowWarning(true),
+    onReset:  () => setShowWarning(false),
+    onLogout: () => {
+      setShowWarning(false);
+      logout();
+    },
+  });
+
   return (
-    <Routes>
-      <Route path="/login" element={user ? <Navigate to="/" /> : <Login />} />
-      <Route path="/register" element={user ? <Navigate to="/" /> : <Register />} />
-      <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-        <Route index element={<Dashboard />} />
-        <Route path="records" element={<Records />} />
-        <Route path="categories" element={<Categories />} />
-        <Route path="monthly-summary" element={<MonthlySummary />} />
-        <Route path="goals" element={<Goals />} />
-      </Route>
-    </Routes>
+    <>
+      <InactivityWarningModal
+        visible={showWarning}
+        onStayLoggedIn={() => {
+          setShowWarning(false);
+          stayLoggedIn(); // explicitly resets the 20-min timer
+        }}
+      />
+
+      <Routes>
+        <Route path="/login" element={user ? <Navigate to="/" /> : <Login />} />
+        <Route path="/register" element={user ? <Navigate to="/" /> : <Register />} />
+        <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+          <Route index element={<Dashboard />} />
+          <Route path="records" element={<Records />} />
+          <Route path="categories" element={<Categories />} />
+          <Route path="monthly-summary" element={<MonthlySummary />} />
+          <Route path="goals" element={<Goals />} />
+        </Route>
+      </Routes>
+    </>
   );
 }
 
